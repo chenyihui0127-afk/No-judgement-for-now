@@ -96,10 +96,10 @@ $('submitMessage').addEventListener('click',async()=>{
   button.disabled=true;
   button.textContent='正在提交…';
   try{
-    await supabaseRequest('messages',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({topic:selectedTopic,content:text,status:'pending',likes:0})});
+    await supabaseRequest('messages',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({topic:selectedTopic,content:text,status:'approved',likes:0})});
     $('messageInput').value='';
     $('charCount').textContent='0';
-    $('modalText').textContent='你的留言已经收到，会先经过审核。审核通过后，才会出现在公共留言墙上。谢谢你愿意把这份善意留给别人。';
+    $('modalText').textContent='你的留言已经发布到留言墙。谢谢你愿意把这份善意留给别人。';
     $('modal').classList.add('show');
     $('submitToast').classList.remove('show');
   }catch(error){
