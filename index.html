@@ -26,8 +26,28 @@
 <section class="section" id="about"><div class="wrap about"><div><div class="eyebrow">关于这里</div><h2>现实的问题需要解决。<br>但你不必先责怪自己。</h2><p>我们没有打算告诉你，失业是礼物，努力不重要，或者所有事情最终都会变好。</p><p>钱、工作、未来，都是真实的问题。我们只是想留一个地方，让你不必在解决问题之前，先把自己批评一遍。</p></div><div class="principles"><div class="principle"><b>01</b><div><strong>不把疗愈变成任务</strong><div class="smallnote">没有打卡、积分，也没有必须完成的步骤。</div></div></div><div class="principle"><b>02</b><div><strong>不强迫积极</strong><div class="smallnote">你可以还没想通，也可以暂时不相信安慰的话。</div></div></div><div class="principle"><b>03</b><div><strong>不把普通生活浪漫化</strong><div class="smallnote">承认现实的困难，不代表要用困难定义自己。</div></div></div><div class="principle"><b>04</b><div><strong>不要求你留下</strong><div class="smallnote">你可以读完就走。你不欠这里一个结果。</div></div></div></div></div></section>
 </main>
 <footer class="wrap footer"><span>暂不评价 · 一个普通人的人生缓冲区</span><span>这里提供情绪支持与自我反思，不替代专业心理帮助。</span></footer>
-<div class="modal-backdrop" id="modal"><div class="modal"><h3>谢谢你愿意留下一句话。</h3><p id="modalText">这份善意会先留在你的浏览器里。正式版上线后，留言经过审核才会展示给其他人。</p><div class="modal-actions"><button class="btn secondary" id="modalClose">知道了</button><button class="btn" id="modalGoWall">看看留言墙</button></div></div></div>
+<div class="modal-backdrop" id="modal"><div class="modal"><h3>谢谢你愿意留下一句话。</h3><p id="modalText">你的留言已经收到，会先经过审核。审核通过后，才会出现在公共留言墙上。</p><div class="modal-actions"><button class="btn secondary" id="modalClose">知道了</button><button class="btn" id="modalGoWall">看看留言墙</button></div></div></div>
 <script>
+const SUPABASE_URL='https://vhecmrndvmlhzvxemyvv.supabase.co';
+const SUPABASE_KEY='sb_publishable_TETuX0aMTAu4eeE5J5WmBA_SwRDzOzV';
+async function supabaseRequest(path, options={}) {
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Supabase request failed (${response.status}): ${detail}`);
+  }
+  if (response.status === 204) return null;
+  const raw = await response.text();
+  return raw ? JSON.parse(raw) : null;
+}
 const themes=[
 {id:'work',title:'工作占据了我的时间，却没有让我觉得人生更好',desc:'每天忙忙碌碌，却不知道这些事情究竟有什么意义。',tag:'工作没有意义',headline:'你不必把每一份忙碌，都解释成成长。',body:['也许你每天都有很多事情要处理，消息、会议、表格、临时任务，一件接着一件。忙完一天，却很难说清自己究竟留下了什么。','最消耗人的，可能不只是工作本身，而是你明明已经很努力了，却依然觉得时间在流走，自己的人生却没有向想去的方向靠近。','你不需要假装这些事情很有意义。如果一份工作让你疲惫、失望，甚至觉得自己在替没有意义的事情修修补补，你可以承认这种感受。','只是，工作的价值不等于你这个人的价值。你可以认真考虑下一步，也可以暂时还没有答案。你不必一边承受现状，一边再用“我怎么把时间浪费成这样”惩罚自己。']},
 {id:'unemployed',title:'没有工作、没有收入，我觉得自己正在退步',desc:'我知道休息也重要，可想到没有产出，还是很不安。',tag:'失业与经济焦虑',headline:'你没有在前进，和你正在失败，不是一回事。',body:['也许你已经很久没有过上一种让自己安心的生活了。没有稳定的收入，没有明确的下一步。打开招聘网站，觉得自己什么都不够；关掉招聘网站，又觉得自己浪费了一天。','你想休息，但会想起钱；你想做点什么，却又不知道什么才值得做。最难受的可能是，你甚至不允许自己理直气壮地难受，因为你觉得没有工作，就更应该抓紧每一分钟。','没有收入确实会带来压力，重新找到方向也确实需要时间。这些现实不会因为一句安慰就消失。','只是，失去一份工作，和失去一个人的价值，是两件不同的事。你可以继续寻找机会，也可以有一段什么都没想明白的日子。你不必在解决问题之前，先把自己批评一遍。']},
@@ -49,12 +69,48 @@ const $=id=>document.getElementById(id);
 function renderStates(){ $('states').innerHTML=themes.map((t,i)=>`<button class="state ${selected===t.id?'selected':''}" data-state="${t.id}"><span class="num">0${i+1}</span><strong>${t.title}</strong><span>${t.desc}</span></button>`).join('');document.querySelectorAll('[data-state]').forEach(b=>b.addEventListener('click',()=>{selected=b.dataset.state;renderStates()})); }
 function showLetter(){const t=themes.find(x=>x.id===selected);$('letterTag').textContent='回信 · '+t.tag;$('letterTitle').textContent=t.headline;$('letterBody').innerHTML=t.body.map(p=>`<p>${escapeHTML(p)}</p>`).join('');$('letter').classList.add('show');$('letter').scrollIntoView({behavior:'smooth',block:'start'});}
 function escapeHTML(s){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function getNotes(){try{return JSON.parse(localStorage.getItem('zbpj_notes')||'[]')}catch{return []}}
-function renderWall(){const own=getNotes().filter(n=>n.status==='local');const notes=[...own,...sampleNotes];$('wallCards').innerHTML=notes.map((n,i)=>`<article class="note-card"><div class="note-topic">${escapeHTML(n.topic)}</div><div class="note-text">“${escapeHTML(n.text)}”</div>${n.extra?`<div class="smallnote">${escapeHTML(n.extra)}</div>`:''}<div class="note-foot"><span>${n.status==='local'?'保存在此设备':'一份来自相似处境的理解'}</span><button class="heart" data-like="${i}" aria-label="这句话让我感到被理解">♡ 这句话让我感到被理解</button></div></article>`).join('');document.querySelectorAll('[data-like]').forEach(b=>b.addEventListener('click',()=>{b.classList.toggle('liked');b.textContent=b.classList.contains('liked')?'♥ 收到这份理解':'♡ 这句话让我感到被理解'}));}
+async function renderWall(){
+  let publicNotes=[];
+  try {
+    publicNotes = await supabaseRequest('messages?select=id,topic,content,created_at&status=eq.approved&order=created_at.desc&limit=30') || [];
+  } catch (error) {
+    console.error('Unable to load public messages:', error);
+  }
+  const notes=[
+    ...publicNotes.map(n=>({topic:n.topic,text:n.content,extra:'',status:'public',id:n.id})),
+    ...sampleNotes.map(n=>({...n,status:'sample'}))
+  ];
+  $('wallCards').innerHTML=notes.map((n,i)=>`<article class="note-card"><div class="note-topic">${escapeHTML(n.topic)}</div><div class="note-text">“${escapeHTML(n.text)}”</div>${n.extra?`<div class="smallnote">${escapeHTML(n.extra)}</div>`:''}<div class="note-foot"><span>${n.status==='public'?'来自一位陌生人的留言':'示例留言 · 用于展示体验'}</span><button class="heart" data-like="${i}" aria-label="这句话让我感到被理解">♡ 这句话让我感到被理解</button></div></article>`).join('');
+  document.querySelectorAll('[data-like]').forEach(b=>b.addEventListener('click',()=>{b.classList.toggle('liked');b.textContent=b.classList.contains('liked')?'♥ 收到这份理解':'♡ 这句话让我感到被理解'}));
+}
 function renderTopics(){const topics=['工作没有意义','失业与经济焦虑','同龄人比较','人生空虚与意义','完美主义与自我否定','疲惫与休息内疚'];$('topicSelect').innerHTML=topics.map(t=>`<button class="topic-chip ${selectedTopic===t?'active':''}" data-topic="${t}">${t}</button>`).join('');document.querySelectorAll('[data-topic]').forEach(b=>b.addEventListener('click',()=>{selectedTopic=b.dataset.topic;renderTopics()}));}
 $('startBtn').addEventListener('click',()=>$('letters').scrollIntoView({behavior:'smooth'}));$('readBtn').addEventListener('click',showLetter);$('toWall').addEventListener('click',()=>{$('wall').scrollIntoView({behavior:'smooth'});$('messageInput').focus({preventScroll:true});});$('messageInput').addEventListener('input',e=>$('charCount').textContent=e.target.value.length);
+
 $('copyLetter').addEventListener('click',async()=>{const t=themes.find(x=>x.id===selected);const txt=t.headline+'\n\n'+t.body.join('\n\n')+'\n\n'+$('letterSignoff').textContent;try{await navigator.clipboard.writeText(txt);$('copyLetter').textContent='已复制';setTimeout(()=>$('copyLetter').textContent='复制这封信',1800)}catch{$('copyLetter').textContent='请手动选择文字'}});
-$('submitMessage').addEventListener('click',()=>{const text=$('messageInput').value.trim();if(text.length<3){$('submitToast').textContent='可以再多写几个字，也可以先不写。';$('submitToast').classList.add('show');return}if(/https?:\/\/|www\.|微信|手机号|电话|邮箱|@/.test(text)){ $('submitToast').textContent='为了保护隐私，请不要留下联系方式或外部链接。';$('submitToast').classList.add('show');return}const entry={topic:selectedTopic,text,createdAt:new Date().toISOString(),status:'local'};const old=getNotes();old.unshift(entry);try{localStorage.setItem('zbpj_notes',JSON.stringify(old.slice(0,30)))}catch{}$('messageInput').value='';$('charCount').textContent='0';$('modal').classList.add('show');$('submitToast').classList.remove('show');});
+$('submitMessage').addEventListener('click',async()=>{
+  const text=$('messageInput').value.trim();
+  if(text.length<3){$('submitToast').textContent='可以再多写几个字，也可以先不写。';$('submitToast').classList.add('show');return}
+  if(/https?:\/\/|www\.|微信|手机号|电话|邮箱|@/.test(text)){$('submitToast').textContent='为了保护隐私，请不要留下联系方式或外部链接。';$('submitToast').classList.add('show');return}
+  if(text.length>300){$('submitToast').textContent='留言请控制在 300 字以内。';$('submitToast').classList.add('show');return}
+  const button=$('submitMessage');
+  button.disabled=true;
+  button.textContent='正在提交…';
+  try{
+    await supabaseRequest('messages',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({topic:selectedTopic,content:text,status:'pending',likes:0})});
+    $('messageInput').value='';
+    $('charCount').textContent='0';
+    $('modalText').textContent='你的留言已经收到，会先经过审核。审核通过后，才会出现在公共留言墙上。谢谢你愿意把这份善意留给别人。';
+    $('modal').classList.add('show');
+    $('submitToast').classList.remove('show');
+  }catch(error){
+    console.error('Unable to submit message:',error);
+    $('submitToast').textContent='暂时没有提交成功，请稍后再试。如果问题持续，请联系网站维护者。';
+    $('submitToast').classList.add('show');
+  }finally{
+    button.disabled=false;
+    button.textContent='把这份善意留给 TA';
+  }
+});
 $('modalClose').addEventListener('click',()=>$('modal').classList.remove('show'));$('modalGoWall').addEventListener('click',()=>{$('modal').classList.remove('show');$('wall').scrollIntoView({behavior:'smooth'})});$('modal').addEventListener('click',e=>{if(e.target===$('modal'))$('modal').classList.remove('show')});
 renderStates();renderTopics();renderWall();
 </script>
